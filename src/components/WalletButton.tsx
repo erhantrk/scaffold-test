@@ -75,3 +75,22 @@ export const WalletButton = () => {
     </div>
   );
 };
+
+export const ShowBalance = () => {
+  const { balances } = useWallet();
+
+  // CH3S'nin Issuer adresi (Terminalden aldığın GB3MD... ile başlayan adres)
+  const ISSUER_ADDRESS =
+    "GB756P3BHL22Y52PDRCMHJQVJPPKC5US3EHGLVTWM74DHG2ND33XOXHM";
+  const assetKey = `CH3S:${ISSUER_ADDRESS}`;
+
+  const ch3sBalance = balances?.[assetKey]?.balance || "0";
+
+  return (
+    <div style={{ marginRight: "10px", textAlign: "right" }}>
+      <Text as="div" size="sm">
+        CH3S Bakiye: {ch3sBalance} CH3S
+      </Text>
+    </div>
+  );
+};

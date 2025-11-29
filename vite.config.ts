@@ -28,8 +28,19 @@ export default defineConfig(() => {
     envPrefix: "PUBLIC_",
     server: {
       proxy: {
+        // Friendbot proxy'sini koruyarak Horizon endpointlerini ekliyoruz
         "/friendbot": {
-          target: "http://localhost:8000/friendbot",
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        // Hesap bilgileri için
+        "/accounts": {
+          target: "http://localhost:8000",
+          changeOrigin: true,
+        },
+        // RPC istekleri için
+        "/rpc": {
+          target: "http://localhost:8000",
           changeOrigin: true,
         },
       },

@@ -56,7 +56,8 @@ export const disconnectWallet = async () => {
 function getHorizonHost(mode: string) {
   switch (mode) {
     case "LOCAL":
-      return "http://localhost:8000";
+      // Doğrudan localhost:8000 yerine proxy kullanması için boş string veya "/" döndürüyoruz
+      return "";
     case "FUTURENET":
       return "https://horizon-futurenet.stellar.org";
     case "TESTNET":

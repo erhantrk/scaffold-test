@@ -101,3 +101,5 @@ default = true
 # soroban-increment-contract = { id = "C543..." }
 # soroban-token-contract = { id = "C432..." }
 # eurc = { id = "C321..." }
+
+ch3s_sale = { client = true }

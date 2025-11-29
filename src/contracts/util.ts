@@ -22,8 +22,9 @@ const env: z.infer<typeof envSchema> = parsed.success
   : {
       PUBLIC_STELLAR_NETWORK: "LOCAL",
       PUBLIC_STELLAR_NETWORK_PASSPHRASE: WalletNetwork.STANDALONE,
-      PUBLIC_STELLAR_RPC_URL: "http://localhost:8000/rpc",
-      PUBLIC_STELLAR_HORIZON_URL: "http://localhost:8000",
+      // Proxy üzerinden gitmesi için relative path kullanıyoruz
+      PUBLIC_STELLAR_RPC_URL: "/rpc",
+      PUBLIC_STELLAR_HORIZON_URL: "",
     };
 
 export const stellarNetwork =
