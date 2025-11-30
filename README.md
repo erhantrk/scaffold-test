@@ -1,4 +1,4 @@
-# ♟️ Stellar Chess Betting
+# ♟️ Stellar Chess3
 
 Real-time online chess platform with betting using CH3S tokens on Stellar blockchain.
 
