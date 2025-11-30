@@ -23,8 +23,11 @@
     "@stellar/stellar-sdk": "^14.3.3",
     "@stellar/stellar-xdr-json": "^23.0.0",
     "@tanstack/react-query": "^5.90.2",
+    "axios": "^1.13.2",
+    "chess.js": "^1.4.0",
     "lossless-json": "^4.2.0",
     "react": "^19.1.1",
+    "react-chessboard": "^5.8.6",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.3",
     "zod": "^4.1.11"
