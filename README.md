@@ -161,6 +161,9 @@ First betting application on Stellar blockchain.
 - [python-chess](https://python-chess.readthedocs.io/)
 - [FastAPI](https://fastapi.tiangolo.com/)
 
+CAEPMYIT5COWDREVWX73FN5P5ITXFIMFK2SN2AJJNAIHDDXD4LQXJWQA betting contract 
+CDOY7YQJRBIETBS7E6KEDORG4K3SB7GGHKVMXC4KZSQD2ED7CQHHNUUA sale contract
+
 ---
 
 **Have fun! ♟️💰**
