@@ -1,16 +1,16 @@
 #![no_std]
 use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, Symbol, token};
 
-// Oyunun durumları
+// Game states
 #[contracttype]
 #[derive(Clone)]
 pub enum GameState {
-    Waiting,  // 1. Oyuncu oluşturdu, rakip bekleniyor
-    Active,   // 2. Oyuncu katıldı, oyun oynanıyor
-    Finished, // Oyun bitti, ödül dağıtıldı
+    Waiting,  // 1. Player created, waiting for opponent
+    Active,   // 2. Player joined, game in progress
+    Finished, // Game finished, payout done
 }
 
-// Oyun verisi
+// Game data
 #[contracttype]
 #[derive(Clone)]
 pub struct Game {
@@ -28,29 +28,24 @@ const ADMIN: Symbol = symbol_short!("ADMIN");
 
 #[contractimpl]
 impl ChessBettingContract {
-    // Kontratı başlatırken Admin (Website/Server cüzdanı) atanır
     pub fn init(env: Env, admin: Address) {
         env.storage().instance().set(&ADMIN, &admin);
     }
 
-    // 1. OYUNCU: Oyunu kurar ve bahsi yatırır
-    // game_id: Websiteden gelen benzersiz ID
-    // amount: Bahis miktarı (5 CH3S için 50_000_000 stroop)
-    // ttl_ledgers: Oyun süresi (Ledger cinsinden). Örn: 10 dk oyun için ~120 ledger
+    // 1. PLAYER: Creates game and places bet
     pub fn create_game(env: Env, player1: Address, game_id: u64, token: Address, amount: i128, ttl_ledgers: u32) {
-        player1.require_auth(); // Oyuncunun onayı şart
+        player1.require_auth(); // Player1 authorization required
 
-        // Bu ID ile oyun var mı kontrol et
         if env.storage().persistent().has(&game_id) {
-            panic!("Bu Game ID zaten kullanimda.");
+            panic!("This Game ID is already in use.");
         }
 
-        // Token Transferi: Player1 -> Kontrat
-        // NOT: Kullanıcı önceden kontrata 'approve' (onay) vermiş olmalıdır.
+        // FIX: Use `transfer` instead of `transfer_from`
+        // Since player1 authorized this call (require_auth above), 
+        // they implicitly authorize the transfer of their own tokens.
         let client = token::Client::new(&env, &token);
-        client.transfer_from(&env.current_contract_address(), &player1, &env.current_contract_address(), &amount);
+        client.transfer(&player1, &env.current_contract_address(), &amount);
 
-        // Oyun verisini oluştur
         let game = Game {
             player1: player1.clone(),
             player2: None,
@@ -59,66 +54,57 @@ impl ChessBettingContract {
             state: GameState::Waiting,
         };
 
-        // Veriyi kaydet
         env.storage().persistent().set(&game_id, &game);
-
-        // TTL Ayarla: Oyun süresinin 2 katı kadar veri saklansın (Extend TTL)
-        // Eğer oyun 30 dk ise, veri 60 dk boyunca saklanır.
-        // Stellar'da 1 Ledger yaklaşık 5 saniyedir.
+        // Extend TTL to ensure game data survives
         env.storage().persistent().extend_ttl(&game_id, ttl_ledgers * 2, ttl_ledgers * 2);
     }
 
-    // 2. OYUNCU: Oyuna katılır ve bahsi yatırır
+    // 2. PLAYER: Joins game and places bet
     pub fn join_game(env: Env, player2: Address, game_id: u64) {
-        player2.require_auth(); // 2. Oyuncunun onayı şart
+        player2.require_auth(); // Player2 authorization required
 
-        let mut game: Game = env.storage().persistent().get(&game_id).expect("Oyun bulunamadi");
+        let mut game: Game = env.storage().persistent().get(&game_id).expect("Game not found");
 
-        // Oyun bekleme aşamasında mı?
         match game.state {
             GameState::Waiting => {},
-            _ => panic!("Bu oyuna su an katilamazsiniz."),
+            _ => panic!("Cannot join this game right now."),
         }
 
-        // Token Transferi: Player2 -> Kontrat
+        // FIX: Use `transfer` here as well
         let client = token::Client::new(&env, &game.token);
-        client.transfer_from(&env.current_contract_address(), &player2, &env.current_contract_address(), &game.bet_amount);
+        client.transfer(&player2, &env.current_contract_address(), &game.bet_amount);
 
-        // Oyunu güncelle
         game.player2 = Some(player2);
         game.state = GameState::Active;
 
         env.storage().persistent().set(&game_id, &game);
     }
 
-    // ADMIN (WEBSITE): Kazananı belirler ve parayı gönderir
+    // ADMIN (WEBSITE): Resolves game and sends payout
     pub fn resolve_game(env: Env, game_id: u64, winner: Address) {
-        let admin: Address = env.storage().instance().get(&ADMIN).expect("Admin ayarlanmamis");
-        admin.require_auth(); // Sadece ADMIN çağırabilir (Backend cüzdanınız)
+        let admin: Address = env.storage().instance().get(&ADMIN).expect("Admin not set");
+        admin.require_auth(); 
 
-        let mut game: Game = env.storage().persistent().get(&game_id).expect("Oyun bulunamadi");
+        let mut game: Game = env.storage().persistent().get(&game_id).expect("Game not found");
 
         if let GameState::Finished = game.state {
-            panic!("Oyun zaten tamamlanmis.");
+            panic!("Game is already finished.");
         }
 
-        // Kazananın oyunculardan biri olduğunu doğrula
         if winner != game.player1 && Some(winner.clone()) != game.player2 {
-             panic!("Kazanan bu oyunun bir oyuncusu degil.");
+             panic!("Winner is not a player in this game.");
         }
 
-        // Toplam Potu (2 x Bahis) kazanana gönder
         let total_pot = game.bet_amount * 2;
         let client = token::Client::new(&env, &game.token);
+        // Contract sends tokens to winner (no auth needed for contract to spend its own funds)
         client.transfer(&env.current_contract_address(), &winner, &total_pot);
 
-        // Durumu güncelle
         game.state = GameState::Finished;
         env.storage().persistent().set(&game_id, &game);
     }
 
-    // Yardımcı: Oyun bilgisini okuma
     pub fn get_game(env: Env, game_id: u64) -> Game {
-        env.storage().persistent().get(&game_id).expect("Oyun bulunamadi")
+        env.storage().persistent().get(&game_id).expect("Game not found")
     }
 }
