@@ -103,3 +103,7 @@ default = true
 # eurc = { id = "C321..." }
 
 ch3s_sale = { client = true }
+
+[development.contracts.chess_betting]
+client = true
+constructor_args = "--admin me"

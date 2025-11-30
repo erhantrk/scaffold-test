@@ -1,6 +1,5 @@
 import React from "react";
 import { Layout, Text } from "@stellar/design-system";
-import { GuessTheNumber } from "../components/GuessTheNumber";
 // Yeni bileşeni import edin
 import { Ch3sSaleComponent } from "../components/Ch3sSale";
 
@@ -23,11 +22,6 @@ const Home: React.FC = () => (
       </div>
 
       <hr />
-
-      <Text as="h2" size="lg">
-        &lt;GuessTheNumber /&gt;
-      </Text>
-      <GuessTheNumber />
 
       {/* ... Kalan kodlar ... */}
     </Layout.Inset>

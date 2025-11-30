@@ -46,38 +46,23 @@ export const Ch3sSaleComponent = () => {
       });
 
       // 4. İmzala ve Gönder
+      // signAndSend hata fırlatmazsa işlem başarılıdır.
       const submissionResult = await tx.signAndSend({ signTransaction });
 
-      const result = submissionResult as unknown as {
-        isOk: () => boolean;
-        unwrapErr: () => unknown;
-      };
+      // Konsola yazdırıp sonucun ne olduğuna bakabilirsiniz (opsiyonel)
+      console.log("İşlem Sonucu:", submissionResult);
 
-      // GÜVENLİK KONTROLÜ: result'ın null gelme ihtimaline karşı kontrol ediyoruz
-      if (result && result.isOk()) {
-        setTxResult({
-          type: "success",
-          message: `Başarılı! ${amount} CH3S satın aldınız.`,
-        });
-        setAmount("");
-      } else if (result) {
-        // İşlem tamamlandı ama başarısız oldu (isOk false döndü)
-        setTxResult({
-          type: "error",
-          message: "İşlem ağda başarısız oldu (result.isOk() false).",
-        });
-        console.error(result.unwrapErr());
-      } else {
-        // Kontrolsüz null geldi. İşleminiz başarılı olmuş olabilir, uyarı verelim.
-        setTxResult({
-          type: "success",
-          message: `İşlem büyük ihtimalle başarılı. Sayfayı güncelliyorum...`,
-        });
-      }
+      // Buraya kadar hata almadan geldiyse işlem başarılıdır
+      setTxResult({
+        type: "success",
+        message: `Başarılı! ${amount} CH3S satın aldınız.`,
+      });
+      setAmount("");
 
-      // 5. Her durumda bakiyeleri güncelle (Sayfayı güncelleme isteğiniz buydu)
+      // 5. Bakiyeleri güncelle
       await updateBalances();
     } catch (error) {
+      console.error(error); // Hatayı konsola yazdır
       setTxResult({
         type: "error",
         message: `Hata oluştu: ${(error as Error).message}`,
