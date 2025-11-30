@@ -110,38 +110,6 @@ See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed installation.
 ### Blockchain
 - Soroban (Stellar), Rust, CH3S Token
 
-## 📁 Project Structure
-
-```
-stellar-chess-betting/
-├── chess_backend/
-│   ├── app/
-│   │   ├── core/          # Config, database, security
-│   │   ├── models/        # Database models
-│   │   ├── routers/       # API endpoints
-│   │   ├── schemas/       # Pydantic schemas
-│   │   ├── services/      # Business logic (stellar_service!)
-│   │   └── main.py
-│   ├── .env.template
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── src/
-│   │   ├── services/      # stellarService, apiService
-│   │   ├── App.jsx
-│   │   ├── Login.jsx
-│   │   ├── Register.jsx
-│   │   ├── Lobby.jsx
-│   │   └── Game.jsx
-│   └── package.json
-│
-├── contracts/             # Soroban smart contracts (Rust)
-│   ├── chess_betting/
-│   └── ch3s_sale/
-│
-├── SETUP_GUIDE.md
-└── README.md
-```
 
 ## 🛡️ Security
 
@@ -179,9 +147,6 @@ Contributions welcome!
 4. Push (`git push origin feature/amazing`)
 5. Open Pull Request
 
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE)
 
 ## 👨‍💻 Developer
 
