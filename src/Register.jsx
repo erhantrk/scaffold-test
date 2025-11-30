@@ -1,38 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { stellarService } from "./services/stellarService";
 import { apiService } from "./services/apiService";
+import { useWallet } from "./hooks/useWallet";
+import { connectWallet } from "./util/wallet";
 
 const Register = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [stellarKey, setStellarKey] = useState("");
-  const [isConnecting, setIsConnecting] = useState(false);
   const navigate = useNavigate();
 
-  // Freighter ile wallet bağla
-  const handleConnectWallet = async () => {
-    setIsConnecting(true);
-    try {
-      const result = await stellarService.connectWallet();
-
-      if (result.success) {
-        setStellarKey(result.publicKey);
-        alert(`✅ Wallet bağlandı!\n${result.publicKey.slice(0, 10)}...`);
-      } else {
-        alert(`❌ Wallet bağlanamadı: ${result.error}`);
-      }
-    } catch (error) {
-      alert("Freighter hatası: " + error.message);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
+  // Get wallet address and connection status from the hook
+  const { address, isPending } = useWallet();
 
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    if (!stellarKey) {
+    if (!address) {
       alert("❌ Önce Freighter Wallet bağlamalısınız!");
       return;
     }
@@ -41,7 +24,7 @@ const Register = () => {
       const response = await apiService.register(
         username,
         password,
-        stellarKey,
+        address, // Use the address from useWallet
       );
 
       console.log("Kayıt Başarılı:", response);
@@ -49,8 +32,8 @@ const Register = () => {
         `✅ Kayıt Başarılı! Elo Puanınız: ${response.elo}\nŞimdi giriş yapabilirsiniz.`,
       );
 
-      // Stellar key'i local storage'a kaydet
-      localStorage.setItem("stellar_public_key", stellarKey);
+      // Stellar key'i local storage'a kaydet (isteğe bağlı, wallet provider zaten yönetiyor ama backend login için gerekebilir)
+      localStorage.setItem("stellar_public_key", address);
 
       navigate("/");
     } catch (error) {
@@ -156,17 +139,15 @@ const Register = () => {
           {/* FREIGHTER WALLET BAĞLANTISI */}
           <div
             style={{
-              background: stellarKey
+              background: address
                 ? "rgba(46, 204, 113, 0.2)"
                 : "rgba(0,0,0,0.3)",
               padding: "15px",
               borderRadius: "10px",
-              border: stellarKey
-                ? "2px solid #2ecc71"
-                : "2px solid transparent",
+              border: address ? "2px solid #2ecc71" : "2px solid transparent",
             }}
           >
-            {stellarKey ? (
+            {address ? (
               <div>
                 <div
                   style={{
@@ -184,14 +165,14 @@ const Register = () => {
                     wordBreak: "break-all",
                   }}
                 >
-                  {stellarKey.slice(0, 10)}...{stellarKey.slice(-10)}
+                  {address.slice(0, 10)}...{address.slice(-10)}
                 </div>
               </div>
             ) : (
               <button
                 type="button"
-                onClick={handleConnectWallet}
-                disabled={isConnecting}
+                onClick={() => connectWallet()}
+                disabled={isPending}
                 style={{
                   width: "100%",
                   padding: "10px",
@@ -202,24 +183,22 @@ const Register = () => {
                   fontWeight: "bold",
                   border: "none",
                   borderRadius: "8px",
-                  cursor: isConnecting ? "not-allowed" : "pointer",
-                  opacity: isConnecting ? 0.6 : 1,
+                  cursor: isPending ? "not-allowed" : "pointer",
+                  opacity: isPending ? 0.6 : 1,
                 }}
               >
-                {isConnecting
-                  ? "🔄 Bağlanıyor..."
-                  : "🔗 Freighter Wallet Bağla"}
+                {isPending ? "🔄 Bağlanıyor..." : "🔗 Cüzdan Bağla"}
               </button>
             )}
           </div>
 
           <button
             type="submit"
-            disabled={!stellarKey}
+            disabled={!address}
             style={{
               marginTop: "20px",
               padding: "15px",
-              background: stellarKey
+              background: address
                 ? "linear-gradient(90deg, #2ecc71 0%, #27ae60 100%)"
                 : "rgba(100, 100, 100, 0.5)",
               color: "white",
@@ -227,15 +206,15 @@ const Register = () => {
               fontWeight: "bold",
               border: "none",
               borderRadius: "10px",
-              cursor: stellarKey ? "pointer" : "not-allowed",
+              cursor: address ? "pointer" : "not-allowed",
               transition: "transform 0.2s",
-              opacity: stellarKey ? 1 : 0.5,
+              opacity: address ? 1 : 0.5,
             }}
             onMouseEnter={(e) =>
-              stellarKey && (e.target.style.transform = "scale(1.05)")
+              address && (e.target.style.transform = "scale(1.05)")
             }
             onMouseLeave={(e) =>
-              stellarKey && (e.target.style.transform = "scale(1)")
+              address && (e.target.style.transform = "scale(1)")
             }
           >
             HESAP OLUŞTUR

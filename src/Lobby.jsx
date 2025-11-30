@@ -1,15 +1,27 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "./services/apiService";
-import { Ch3sSaleComponent } from "/Users/erhanturker/Stellar/scaffold-test/src/components/Ch3sSale.tsx";
+import { Ch3sSaleComponent } from "./components/Ch3sSale";
+import { useWallet } from "./hooks/useWallet";
+import FundAccountButton from "./components/FundAccountButton";
+
+// The issuer address for your custom token
+const CH3S_ISSUER = "GB756P3BHL22Y52PDRCMHJQVJPPKC5US3EHGLVTWM74DHG2ND33XOXHM";
 
 const Lobby = () => {
   const navigate = useNavigate();
   const [statusText, setStatusText] = useState("");
   const [waitingGameId, setWaitingGameId] = useState(null);
   const [selectedBet, setSelectedBet] = useState(10000000); // 1 CH3S = 10^7 stroops
-  const [userBalance, setUserBalance] = useState(0);
   const [username, setUsername] = useState("");
+
+  // Get live blockchain data from the wallet hook
+  const { balances } = useWallet();
+
+  // Calculate CH3S Balance directly from the wallet
+  // This matches the format used in Ch3sSaleComponent
+  const assetKey = `CH3S:${CH3S_ISSUER}`;
+  const liveBalance = balances?.[assetKey]?.balance || "0";
 
   // Kullanıcı bilgilerini al
   useEffect(() => {
@@ -17,14 +29,7 @@ const Lobby = () => {
       try {
         const user = await apiService.getCurrentUser();
         setUsername(user.username);
-
-        // Token balance al (eğer backend'de endpoint varsa)
-        try {
-          const balanceData = await apiService.getTokenBalance();
-          setUserBalance(balanceData.balance || 0);
-        } catch (error) {
-          console.warn("Balance alınamadı");
-        }
+        // We no longer need apiService.getTokenBalance() because we use useWallet()
       } catch (error) {
         console.error("Kullanıcı bilgisi alınamadı:", error);
         navigate("/");
@@ -138,7 +143,10 @@ const Lobby = () => {
           {username || "Yükleniyor..."}
         </div>
         <div style={{ fontSize: "12px", color: "#888", marginTop: "5px" }}>
-          Bakiye: {(userBalance / 10000000).toFixed(2)} CH3S
+          Bakiye: {liveBalance} CH3S
+        </div>
+        <div style={{ marginTop: "10px" }}>
+          {/* Use a relative path or proper alias for the component */}
           <Ch3sSaleComponent />
         </div>
       </div>

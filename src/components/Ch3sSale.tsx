@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Button, Card, Input, Text, Alert } from "@stellar/design-system";
+import { Alert } from "@stellar/design-system";
 import { useWallet } from "../hooks/useWallet";
-import { Box } from "./layout/Box";
 import { Client as CH3SClient } from "ch3s_sale";
+import { network } from "../contracts/util";
 
-const CONTRACT_ID = "CDUA7SHTUBYEPYAAYDSAVFVKIUKGX5W475YQFHCNXOXJS7TDM4EJEPTN"; // Adım 2.2-b'den gelen ID
-const CH3S_ISSUER = "GB756P3BHL22Y52PDRCMHJQVJPPKC5US3EHGLVTWM74DHG2ND33XOXHM"; // Adım 2.1-c'den gelen ISSUER_ADDRESS
+// ⚠️ DİKKAT: Terminali yeniden başlattıysanız bu ID'ler değişmiştir!
+// Yeni ID'leri almak için terminalde `stellar contract ids` çalıştırın.
+const CONTRACT_ID = "CDUA7SHTUBYEPYAAYDSAVFVKIUKGX5W475YQFHCNXOXJS7TDM4EJEPTN"; //"CDUA7SHTUBYEPYAAYDSAVFVKIUKGX5W475YQFHCNXOXJS7TDM4EJEPTN";
+const CH3S_ISSUER = "GB756P3BHL22Y52PDRCMHJQVJPPKC5US3EHGLVTWM74DHG2ND33XOXHM";
 
 export const Ch3sSaleComponent = () => {
   const { address, signTransaction, updateBalances, balances } = useWallet();
@@ -16,7 +18,8 @@ export const Ch3sSaleComponent = () => {
     message: string;
   } | null>(null);
 
-  const ch3sBalance = balances?.[`CH3S:${CH3S_ISSUER}`]?.balance || "0";
+  const assetKey = `CH3S:${CH3S_ISSUER}`;
+  const ch3sBalance = balances?.[assetKey]?.balance || "0";
   const xlmBalance = balances?.["xlm"]?.balance || "0";
 
   const handleBuy = async () => {
@@ -25,47 +28,39 @@ export const Ch3sSaleComponent = () => {
     setTxResult(null);
 
     try {
-      // 1. Miktarı Stroop formatına çevir (10.000.000 ile çarp)
       const amountInStroops = BigInt(
         Math.floor(parseFloat(amount) * 10_000_000),
       );
 
-      // 2. Kontrat Client'ını oluştur
       const client = new CH3SClient({
-        networkPassphrase: "Standalone Network ; February 2017",
+        networkPassphrase: network.passphrase,
         contractId: CONTRACT_ID,
-        rpcUrl: "http://localhost:8000/rpc",
+        rpcUrl: network.rpcUrl,
+        // DÜZELTME: Kesin çözüm için doğrudan true yapıyoruz
         allowHttp: true,
         publicKey: address,
       });
 
-      // 3. İşlemi oluştur
       const tx = await client.buy({
         buyer: address,
         amount_ch3s: amountInStroops,
       });
 
-      // 4. İmzala ve Gönder
-      // signAndSend hata fırlatmazsa işlem başarılıdır.
       const submissionResult = await tx.signAndSend({ signTransaction });
 
-      // Konsola yazdırıp sonucun ne olduğuna bakabilirsiniz (opsiyonel)
-      console.log("İşlem Sonucu:", submissionResult);
+      console.log("Tx Result:", submissionResult);
 
-      // Buraya kadar hata almadan geldiyse işlem başarılıdır
       setTxResult({
         type: "success",
         message: `Başarılı! ${amount} CH3S satın aldınız.`,
       });
       setAmount("");
-
-      // 5. Bakiyeleri güncelle
       await updateBalances();
     } catch (error) {
-      console.error(error); // Hatayı konsola yazdır
+      console.error(error);
       setTxResult({
         type: "error",
-        message: `Hata oluştu: ${(error as Error).message}`,
+        message: `Hata: ${(error as Error).message}`,
       });
     } finally {
       setIsSubmitting(false);
@@ -73,7 +68,6 @@ export const Ch3sSaleComponent = () => {
   };
 
   if (!address) {
-    // Düzeltme: placement="inline" eklendi
     return (
       <Alert variant="warning" title="Cüzdan Bağlı Değil" placement="inline">
         Lütfen sağ üstten cüzdanınızı bağlayın.
@@ -82,104 +76,196 @@ export const Ch3sSaleComponent = () => {
   }
 
   return (
-    <Card>
-      {/* Düzeltme: as="h2" ve as="p" eklendi */}
-      <Text as="h2" size="lg" weight="bold">
-        CH3S Token Satışı
-      </Text>
-      <Text as="p" size="sm">
-        1 XLM karşılığında 100 CH3S alabilirsiniz.
-      </Text>
-
-      <Box gap="md" addlClassName="mt-4">
-        <div
+    <div
+      style={{
+        border: "1px solid #e0e0e0",
+        borderRadius: "16px", // Daha modern, yuvarlak hatlar
+        padding: "24px",
+        maxWidth: "480px",
+        backgroundColor: "#fff",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+        fontFamily: "system-ui, -apple-system, sans-serif", // Sistem fontu
+      }}
+    >
+      {/* --- Header Kısmı --- */}
+      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+        <h2
           style={{
-            display: "flex",
-            gap: "20px",
-            justifyContent: "space-between",
+            margin: "0 0 8px 0",
+            fontSize: "24px",
+            fontWeight: "700",
+            color: "#1a1a1a",
           }}
         >
-          <div
-            style={{
-              backgroundColor: "#f4f4f4",
-              padding: "10px",
-              borderRadius: "8px",
-              flex: 1,
-            }}
-          >
-            {/* Düzeltme: as="div" eklendi */}
-            <Text as="div" size="xs">
-              XLM Bakiyeniz
-            </Text>
-            <Text as="div" size="lg" weight="bold">
-              {xlmBalance}
-            </Text>
+          CH3S Token Satışı
+        </h2>
+        <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+          Kur:{" "}
+          <span style={{ color: "#007bff", fontWeight: "600" }}>
+            1 XLM = 100 CH3S
+          </span>
+        </p>
+      </div>
+
+      {/* --- Bakiyeler (Grid Yapısı) --- */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "12px",
+          marginBottom: "24px",
+        }}
+      >
+        {/* XLM Kutu */}
+        <div
+          style={{
+            border: "1px solid #eee",
+            borderRadius: "12px",
+            padding: "12px",
+            textAlign: "center",
+            backgroundColor: "#fafafa",
+          }}
+        >
+          <div style={{ fontSize: "12px", color: "#888", marginBottom: "4px" }}>
+            XLM Bakiyeniz
           </div>
-          <div
-            style={{
-              backgroundColor: "#e3f2fd",
-              padding: "10px",
-              borderRadius: "8px",
-              flex: 1,
-            }}
-          >
-            <Text as="div" size="xs">
-              CH3S Bakiyeniz
-            </Text>
-            <Text as="div" size="lg" weight="bold">
-              {ch3sBalance}
-            </Text>
+          <div style={{ fontSize: "18px", fontWeight: "bold", color: "#333" }}>
+            {xlmBalance}
           </div>
         </div>
 
-        <Input
-          id="buy-amount"
-          // Düzeltme: fieldSize="lg" eklendi
-          fieldSize="lg"
-          label="Almak istediğiniz CH3S miktarı"
-          placeholder="Örn: 10"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          type="number"
-          // Düzeltme: İçerideki Text için as="span" eklendi
-          rightElement={
-            <Text as="span" size="sm">
-              CH3S
-            </Text>
-          }
-        />
-
-        {amount &&
-          parseFloat(amount) > 0 && ( // amount var VE pozitif bir sayıysa göster
-            <Text as="div" size="sm" style={{ color: "gray" }}>
-              Tahmini Maliyet:
-              <strong>
-                {(parseFloat(amount) / 100 + 0.0125729).toFixed(7)} XLM
-              </strong>
-            </Text>
-          )}
-
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => void handleBuy()}
-          disabled={isSubmitting || !amount || parseFloat(amount) <= 0}
-          isLoading={isSubmitting}
+        {/* CH3S Kutu */}
+        <div
+          style={{
+            border: "1px solid #e3f2fd",
+            borderRadius: "12px",
+            padding: "12px",
+            textAlign: "center",
+            backgroundColor: "#f0f9ff",
+          }}
         >
-          {isSubmitting ? "İşleniyor..." : "Satın Al"}
-        </Button>
-
-        {txResult && (
-          <Alert
-            variant={txResult.type === "success" ? "success" : "error"}
-            title={txResult.type === "success" ? "İşlem Başarılı" : "Hata"}
-            // Düzeltme: placement="inline" eklendi
-            placement="inline"
+          <div
+            style={{ fontSize: "12px", color: "#558bbf", marginBottom: "4px" }}
           >
-            {txResult.message}
-          </Alert>
-        )}
-      </Box>
-    </Card>
+            CH3S Bakiyeniz
+          </div>
+          <div
+            style={{ fontSize: "18px", fontWeight: "bold", color: "#007bff" }}
+          >
+            {ch3sBalance}
+          </div>
+        </div>
+      </div>
+
+      {/* --- Input Alanı --- */}
+      <div style={{ marginBottom: "20px" }}>
+        <label
+          htmlFor="buy-amount"
+          style={{
+            display: "block",
+            fontSize: "14px",
+            fontWeight: "600",
+            marginBottom: "8px",
+            color: "#333",
+          }}
+        >
+          Miktar
+        </label>
+
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <input
+            id="buy-amount"
+            type="number"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px 60px 12px 12px", // Sağ taraftaki yazı için boşluk
+              fontSize: "16px",
+              border: "1px solid #ccc",
+              borderRadius: "8px",
+              outline: "none",
+              transition: "border-color 0.2s",
+            }}
+            onFocus={(e) => (e.target.style.borderColor = "#007bff")}
+            onBlur={(e) => (e.target.style.borderColor = "#ccc")}
+          />
+          {/* Input içi sağ yazı (Suffix) */}
+          <span
+            style={{
+              position: "absolute",
+              right: "12px",
+              fontSize: "14px",
+              fontWeight: "600",
+              color: "#888",
+              pointerEvents: "none", // Tıklamayı engelle
+            }}
+          >
+            CH3S
+          </span>
+        </div>
+
+        {/* Tahmini maliyet notu */}
+        <div
+          style={{
+            fontSize: "12px",
+            color: "#888",
+            marginTop: "6px",
+            textAlign: "right",
+          }}
+        >
+          Tahmini Maliyet:{" "}
+          {amount ? (parseFloat(amount) / 100).toFixed(2) : "0"} XLM
+        </div>
+      </div>
+
+      {/* --- Buton --- */}
+      <button
+        onClick={() => void handleBuy()}
+        disabled={isSubmitting || !amount}
+        style={{
+          width: "100%",
+          padding: "14px",
+          backgroundColor: isSubmitting || !amount ? "#ccc" : "#007bff",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          fontSize: "16px",
+          fontWeight: "600",
+          cursor: isSubmitting || !amount ? "not-allowed" : "pointer",
+          transition: "background-color 0.2s",
+        }}
+      >
+        {isSubmitting ? "İşleniyor..." : "Satın Al"}
+      </button>
+
+      {/* --- Alert Mesajı --- */}
+      {txResult && (
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "12px",
+            borderRadius: "8px",
+            fontSize: "14px",
+            backgroundColor:
+              txResult.type === "success" ? "#d4edda" : "#f8d7da",
+            color: txResult.type === "success" ? "#155724" : "#721c24",
+            border: `1px solid ${txResult.type === "success" ? "#c3e6cb" : "#f5c6cb"}`,
+          }}
+        >
+          <strong>
+            {txResult.type === "success" ? "Başarılı: " : "Hata: "}
+          </strong>
+          {txResult.message}
+        </div>
+      )}
+    </div>
   );
 };
